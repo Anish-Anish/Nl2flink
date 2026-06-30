@@ -1,8 +1,8 @@
 """
 MegaStore Pulse — AI Pipeline Studio (Streamlit)
 Two personas, one app:
-  📊 Business (Priya)      — ask questions, watch the animated journey, see live answers + charts
-  ⚙️ Data Engineer (Arjun) — review AI pipelines (readable YAML editor), approve & auto-deploy, monitor
+  Business (Priya)      — ask questions, watch the animated journey, see live answers + charts
+  Data Engineer (Arjun) — review AI pipelines (readable YAML editor), approve & auto-deploy, monitor
 
 Run:
   Terminal 1:  uvicorn backend_mock:app --port 8000 --reload
@@ -19,7 +19,7 @@ from views.business_view import render_business
 from views.engineer_view import render_engineer
 
 st.set_page_config(page_title="MegaStore Pulse — AI Pipeline Studio",
-                   page_icon="📊", layout="wide", initial_sidebar_state="expanded")
+                   page_icon="", layout="wide", initial_sidebar_state="expanded")
 
 
 def _inject_css():
@@ -33,7 +33,7 @@ def _inject_css():
 
 # A guaranteed, always-visible sidebar toggle. Streamlit's native expand control is
 # unreliable here (it slides off-screen with the sidebar), so we inject our own
-# floating ☰ button into the PARENT document that clicks whichever native control exists.
+# floating button into the PARENT document that clicks whichever native control exists.
 _TOGGLE_JS = """
 <script>
 (function(){
@@ -50,7 +50,7 @@ _TOGGLE_JS = """
     if (!btn) {
       btn = doc.createElement('button');
       btn.id = 'mp-sidebar-toggle';
-      btn.innerHTML = '☰';
+      btn.innerHTML = '';
       btn.title = 'Show / hide conversations';
       Object.assign(btn.style, {position:'fixed', top:'12px', left:'12px', zIndex:'2000000',
         width:'38px', height:'38px', borderRadius:'10px', cursor:'pointer', padding:'0',
@@ -92,7 +92,7 @@ def _sync_query_params():
             st.session_state._last_open = None
         st.query_params.clear()
         st.query_params["persona"] = st.session_state.persona
-        st.toast("🗑️ Conversation deleted")
+        st.toast("Conversation deleted")
         st.rerun()
 
     persona = qp.get("persona")
@@ -101,7 +101,7 @@ def _sync_query_params():
     tab = qp.get("tab")
     if tab in ("review", "deployed", "monitor"):
         st.session_state.engineer_tab = tab
-    # A suggestion chip was clicked → submit that question (chat-style)
+    # A suggestion chip was clicked submit that question (chat-style)
     q = qp.get("q")
     if q is not None and q != st.session_state._last_q:
         st.session_state._pending_ask = q
@@ -111,12 +111,12 @@ def _sync_query_params():
         st.session_state.active_request_id = open_id
         st.session_state._last_open = open_id
 
-    # Notify pill (journey header) → register Slack notification once
+    # Notify pill (journey header) register Slack notification once
     if qp.get("notify") and open_id and not st.session_state.get(f"notified_{open_id}"):
         from api.client import set_notification
         set_notification(open_id, st.session_state.user_id, st.session_state.token)
         st.session_state[f"notified_{open_id}"] = True
-        st.toast("🔔 You'll be notified on Slack the moment this is live / changes")
+        st.toast("You'll be notified on Slack the moment this is live / changes")
 
 
 def main():

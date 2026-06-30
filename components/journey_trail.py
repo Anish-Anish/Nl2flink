@@ -12,7 +12,7 @@ def render_journey(steps: list, notify_href: str = None, notify_on: bool = False
     parts = []
     for i, step in enumerate(steps):
         state = step["state"]
-        icon = {"done": "✓", "active": "", "rejected": "✗"}.get(state, str(i + 1))
+        icon = {"done": "", "active": "", "rejected": ""}.get(state, str(i + 1))
         parts.append(
             f'<div class="j-step {state}"><div class="j-icon">{icon}</div>'
             f'<div class="j-label">{step["label"]}</div></div>'
@@ -25,14 +25,14 @@ def render_journey(steps: list, notify_href: str = None, notify_on: bool = False
     notify = ""
     if notify_href:
         if notify_on:
-            notify = '<span class="notify-pill on">🔔 You\'ll be notified on Slack</span>'
+            notify = '<span class="notify-pill on">You\'ll be notified on Slack</span>'
         else:
-            notify = f'<a class="notify-pill" href="{notify_href}" target="_self">🔔 Notify me on Slack</a>'
+            notify = f'<a class="notify-pill" href="{notify_href}" target="_self">Notify me on Slack</a>'
 
     st.markdown(
         '<div class="journey-trail">'
         '<div class="journey-head-row">'
-        '<div class="journey-head">⚡ HOW YOUR ANSWER IS BEING BUILT</div>'
+        '<div class="journey-head">HOW YOUR ANSWER IS BEING BUILT</div>'
         f'{notify}</div>'
         f'<div class="journey-steps">{"".join(parts)}</div></div>',
         unsafe_allow_html=True,

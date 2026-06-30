@@ -10,7 +10,7 @@ def _mcp_topbar():
     mcp = get_mcp_status(st.session_state.token)
     if not mcp:
         return
-    chips = ['<span class="mcp-title">🔌 MCP TOOLS</span>']
+    chips = ['<span class="mcp-title">MCP TOOLS</span>']
     for t in mcp["tools"]:
         connecting = t["status"] != "connected"
         dot = '<span class="live-dot amber"></span>' if connecting else '<span class="live-dot"></span>'
@@ -43,16 +43,16 @@ def render_engineer():
         with st.container(key="engtools"):
             c1, c2 = st.columns([6, 1], vertical_alignment="center")
             with c1:
-                st.markdown('<div class="section-label" style="margin:0">📥 PENDING YOUR APPROVAL</div>',
+                st.markdown('<div class="section-label" style="margin:0">PENDING YOUR APPROVAL</div>',
                             unsafe_allow_html=True)
             with c2:
-                if st.button("🔄 Refresh", key="refresh_queue", use_container_width=True):
+                if st.button("Refresh", key="refresh_queue", use_container_width=True):
                     st.rerun()
 
         if not queue["queue"]:
             st.markdown(
                 '<div class="eng-panel"><div style="text-align:center;padding:48px;color:#6B7385">'
-                '<div style="font-size:34px;opacity:.3">✓</div>'
+                '<div style="font-size:34px;opacity:.3"></div>'
                 '<p style="margin-top:8px;font-size:13px">No pipelines awaiting review</p></div></div>',
                 unsafe_allow_html=True,
             )
@@ -66,7 +66,7 @@ def render_engineer():
 
     elif tab == "deployed":
         deployed = get_deployed_pipelines(st.session_state.token) or {"deployed": []}
-        cards = '<div class="eng-panel"><div class="section-label">🟢 RUNNING PIPELINES</div>'
+        cards = '<div class="eng-panel"><div class="section-label">RUNNING PIPELINES</div>'
         for p in deployed["deployed"]:
             cards += (
                 '<div class="dep-card"><div class="dep-head"><div>'
@@ -77,7 +77,7 @@ def render_engineer():
                 '</div></div>'
                 f'<div class="dep-rps">{p["events_per_second"]} events/s</div></div>'
                 f'<div class="dep-tables">Requested by <strong>{p["requested_by"]}</strong> · '
-                f'Sink: Snowflake → {p["sink_table"]} · commit {p["github_commit"]}</div></div>'
+                f'Sink: Snowflake {p["sink_table"]} · commit {p["github_commit"]}</div></div>'
             )
         cards += "</div>"
         st.markdown(cards, unsafe_allow_html=True)

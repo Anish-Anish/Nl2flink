@@ -28,7 +28,7 @@ def render_sidebar():
     """Sidebar = brand + New question + 5 dummy chat conversations."""
     st.markdown('<div class="sidebar-brand">MegaStore<span> Pulse</span></div>', unsafe_allow_html=True)
 
-    if st.button("＋  New question", key="newq", use_container_width=True):
+    if st.button(" New question", key="newq", use_container_width=True):
         if st.session_state.persona != "business":
             from components.topbar import do_login
             do_login("business")
@@ -43,7 +43,7 @@ def render_sidebar():
     # Display the most recent 6 conversations (including newly asked ones)
     requests = requests[:6]
 
-    st.markdown('<div class="conv-list-head">💬 RECENT CHATS</div>', unsafe_allow_html=True)
+    st.markdown('<div class="conv-list-head">RECENT CHATS</div>', unsafe_allow_html=True)
     items = []
     for req in requests:
         cid = req["request_id"]
@@ -55,7 +55,7 @@ def render_sidebar():
             f'<div class="conv-q">{req["question"]}</div>'
             f'<div class="conv-meta"><span class="conv-dot" style="background:{dot}"></span>'
             f'<span>{label} · {_ago(req.get("minutes_ago", 0))}</span></div></a>'
-            f'<a class="conv-delete-btn" href="?persona=business&delete={cid}" target="_self" title="Delete conversation">🗑️</a>'
+            f'<a class="conv-delete-btn" href="?persona=business&delete={cid}" target="_self" title="Delete conversation"></a>'
             f'</div>'
         )
     st.markdown(f'<div class="conv-list">{"".join(items)}</div>', unsafe_allow_html=True)

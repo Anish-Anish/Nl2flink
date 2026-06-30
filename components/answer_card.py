@@ -5,7 +5,7 @@ def trust_badge_html(trust_10) -> str:
     if trust_10 is None:
         return ""
     cls = "trust-badge" if trust_10 >= 9 else ("trust-badge mid" if trust_10 >= 7.5 else "trust-badge low")
-    return f'<span class="{cls}"><span class="t-star">★</span> Trust {trust_10}/10</span>'
+    return f'<span class="{cls}"><span class="t-star"></span> Trust {trust_10}/10</span>'
 
 
 def _kpi_row(kpis: list) -> str:
@@ -23,7 +23,7 @@ def _kpi_row(kpis: list) -> str:
 def _table(table: dict) -> str:
     head = "".join(f"<th>{c}</th>" for c in table["columns"])
     body = "".join("<tr>" + "".join(f"<td>{c}</td>" for c in row) + "</tr>" for row in table["rows"])
-    return ('<div class="detail-label">📋 DETAIL TABLE</div>'
+    return ('<div class="detail-label">DETAIL TABLE</div>'
             f'<table class="answer-table"><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>')
 
 
@@ -34,7 +34,7 @@ def _insight(ins: dict) -> str:
     color = "var(--red)" if tone == "red" else "var(--brand)"
     return (
         f'<div class="insight-strip" style="background:{bg};border-top-color:{border}">'
-        f'<div class="insight-icon">{ins.get("icon", "💡")}</div>'
+        f'<div class="insight-icon">{ins.get("icon", "")}</div>'
         f'<div class="insight-text" style="color:{color}">{ins["html"]}</div></div>'
     )
 
@@ -44,7 +44,7 @@ def render_answer_card(answer: dict):
     badges = "".join(f'<span class="badge {b["cls"]}">{b["html"]}</span>' for b in answer.get("badges", []))
     trust = trust_badge_html(answer.get("trust_10"))
     approved = answer.get("approved_by_name")
-    approved_line = (f'<div class="answer-sub" style="margin-top:4px">✓ Reviewed &amp; approved by '
+    approved_line = (f'<div class="answer-sub" style="margin-top:4px">Reviewed &amp; approved by '
                      f'<strong>{approved}</strong> (Data Engineer) · live {answer.get("live_since","now")}</div>'
                      if approved else "")
     header = (

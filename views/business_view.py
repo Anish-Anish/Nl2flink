@@ -1,7 +1,7 @@
 """Business persona (Priya) — chat-style.
 
 Landing (no active conversation): greeting + suggestion chips + docked chat input.
-A conversation renders as chat bubbles (user question → AI journey/answer). Live
+A conversation renders as chat bubbles (user question AI journey/answer). Live
 status updates use an st.fragment that re-renders ONLY the conversation area
 (run_every) — NOT a full page reload — so the rest of the page never flashes.
 Language rule: never expose pipeline/YAML/Flink/Kafka jargon to the business user.
@@ -13,17 +13,17 @@ from components.journey_trail import render_journey
 from components.answer_card import render_answer_card
 
 _FALLBACK_CHIPS = [
-    {"label": "Sales by category", "icon": "📊", "question": "Sales by category, exclude returns, 10-min window by store and region"},
-    {"label": "High return stores", "icon": "↩️", "question": "Which stores have more than 20 returns in the last 30 minutes?"},
-    {"label": "Platinum customer spend", "icon": "💎", "question": "PLATINUM customer spend by region this hour"},
-    {"label": "Quality alerts", "icon": "🔍", "question": "Top products with quality issues today"},
-    {"label": "Channel GMV", "icon": "🛒", "question": "Hourly GMV by channel — ONLINE vs IN_STORE"},
+    {"label": "Sales by category", "icon": "", "question": "Sales by category, exclude returns, 10-min window by store and region"},
+    {"label": "High return stores", "icon": "", "question": "Which stores have more than 20 returns in the last 30 minutes?"},
+    {"label": "Platinum customer spend", "icon": "", "question": "PLATINUM customer spend by region this hour"},
+    {"label": "Quality alerts", "icon": "", "question": "Top products with quality issues today"},
+    {"label": "Channel GMV", "icon": "", "question": "Hourly GMV by channel — ONLINE vs IN_STORE"},
 ]
 _NON_TERMINAL = ("generating", "validating", "pending_review", "approved", "deploying")
 
 
 def render_business():
-    # A suggestion chip was clicked → ask it immediately.
+    # A suggestion chip was clicked ask it immediately.
     if st.session_state.get("_pending_ask"):
         q = st.session_state._pending_ask
         st.session_state._pending_ask = None
@@ -67,11 +67,11 @@ def _render_landing():
     )
     st.markdown(
         '<div class="chat-landing">'
-        '<div class="chat-logo">📊</div>'
-        f'<div class="chat-greeting">Hi {name} 👋 What would you like to know?</div>'
+        '<div class="chat-logo"></div>'
+        f'<div class="chat-greeting">Hi {name} What would you like to know?</div>'
         '<div class="chat-sub">Ask anything about your stores, sales, inventory or customers in plain English — '
         'your data engineer never needs to get involved unless you want them to.</div>'
-        '<div class="chips-label" style="text-align:center;margin-top:26px">💡 TRY ASKING</div>'
+        '<div class="chips-label" style="text-align:center;margin-top:26px">TRY ASKING</div>'
         f'<div class="chat-suggests">{chips}</div>'
         '</div>',
         unsafe_allow_html=True,
@@ -100,7 +100,7 @@ def _convo_body(rid, data):
             f'{st.session_state.avatar_initial}</div></div>',
             unsafe_allow_html=True,
         )
-    st.markdown('<div class="chat-row asst"><div class="avatar-msg ai">🧠</div>'
+    st.markdown('<div class="chat-row asst"><div class="avatar-msg ai"></div>'
                 '<div class="bubble-asst">', unsafe_allow_html=True)
 
     # Notify pill only while it's in the engineer's approval stage (not once live).
@@ -110,17 +110,17 @@ def _convo_body(rid, data):
 
     if status in ("generating", "validating"):
         retries = data.get("agent_status", {}).get("self_correction_attempt", 0)
-        msg = (f"🤖 The fine-tuned model is auto-correcting a small issue (attempt {retries}/3)…"
-               if retries else "🤖 The fine-tuned model is building your pipeline… this takes a few seconds.")
+        msg = (f"The fine-tuned model is auto-correcting a small issue (attempt {retries}/3)…"
+               if retries else "The fine-tuned model is building your pipeline… this takes a few seconds.")
         _banner(msg)
 
     elif status == "pending_review":
-        _banner("🕐 <strong>Arjun is reviewing your request</strong> — the live answer appears the moment he approves.",
+        _banner("<strong>Arjun is reviewing your request</strong> — the live answer appears the moment he approves.",
                 amber=True)
         _pending_card()
 
     elif status in ("approved", "deploying"):
-        _banner("⚡ <strong>Engineer approved!</strong> Connecting your data feed — deploying to Flink &amp; "
+        _banner("<strong>Engineer approved!</strong> Connecting your data feed — deploying to Flink &amp; "
                 "verifying the Snowflake sink…")
 
     elif status == "live":
@@ -133,7 +133,7 @@ def _convo_body(rid, data):
         st.markdown(
             f'<div style="background:#FEE2E2;border:1px solid #FECACA;border-radius:13px;'
             f'padding:13px 18px;font-size:13px;color:#991B1B">'
-            f'ℹ️ <strong>Your request needs adjustment:</strong> {msg}</div>',
+            f'ℹ<strong>Your request needs adjustment:</strong> {msg}</div>',
             unsafe_allow_html=True,
         )
 
@@ -152,11 +152,11 @@ def _pending_card():
         '<div class="answer-title">Your answer is being prepared</div>'
         '<div class="answer-sub">A data pipeline was generated from your question</div></div>'
         '<div class="answer-meta"><span class="badge badge-amber">⏳ Engineer reviewing</span></div></div>'
-        '<div class="review-state"><div class="big">🔄</div>'
+        '<div class="review-state"><div class="big"></div>'
         '<div class="ttl">Pipeline in review</div>'
         '<div class="desc">Your question became a live data pipeline. Arjun is reviewing the AI-generated '
         'configuration — the live answer will appear here automatically the moment he approves.</div>'
-        '<div class="pill">You\'ll get a Slack notification when it\'s live ✓</div></div></div>',
+        '<div class="pill">You\'ll get a Slack notification when it\'s live </div></div></div>',
         unsafe_allow_html=True,
     )
 

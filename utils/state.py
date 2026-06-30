@@ -14,7 +14,7 @@ DEFAULTS = {
     "logged_in":              False,
     "_last_q":                "",            # query-param change detection
     "_last_open":             None,
-    "_pending_ask":           None,          # a suggestion chip asked → submit on next run
+    "_pending_ask":           None,          # a suggestion chip asked submit on next run
     "editing_card":           None,          # request_id of the review card being edited
     "show_panel":             True,          # custom left drawer open/closed
 }

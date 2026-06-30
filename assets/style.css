@@ -2700,9 +2700,9 @@ section[data-testid="stSidebar"][aria-expanded="true"]~[data-testid="stMain"] .t
 }
 
 /* ============================================================
-   v8 — make room for the floating ☰ toggle; keep native control
+   v8 — make room for the floating toggle; keep native control
    ============================================================ */
-/* When the sidebar is open, the floating ☰ sits at top-left, so indent the brand. */
+/* When the sidebar is open, the floating sits at top-left, so indent the brand. */
 .sidebar-brand {
   padding-left: 52px !important;
 }

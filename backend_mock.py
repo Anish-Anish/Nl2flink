@@ -160,7 +160,7 @@ def yaml_for(kind):
 # Preferred: run model_server.py on the GPU workspace and point MODEL_SERVER_URL here.
 # Fallback: in-process import (only works when this backend runs on the workspace).
 MODEL_SERVER_URL = os.getenv("MODEL_SERVER_URL", "http://localhost:9000")
-MODEL_DIR = os.getenv("MEGASTORE_MODEL_DIR", "/workspace/shared/code space/Megastorepipeline")
+MODEL_DIR = os.getenv("MEGASTORE_MODEL_DIR", os.path.dirname(os.path.abspath(__file__)))
 GEN_TIMEOUT = float(os.getenv("MODEL_GEN_TIMEOUT", "300"))
 real_model = None
 real_tokenizer = None
@@ -175,23 +175,23 @@ def _model_server_ok():
 
 
 # True if EITHER the HTTP model server is reachable OR the model folder exists locally.
-MODEL_ENABLED = _model_server_ok() or os.path.isdir(MODEL_DIR)
+MODEL_ENABLED = _model_server_ok() or os.path.isdir(os.path.join(MODEL_DIR, "training", "final_model"))
 
 def load_real_model():
     global real_model, real_tokenizer, real_safe_generate
     if real_model is not None:
         return True
-    if not os.path.exists(MODEL_DIR):
+    training_path = os.path.join(MODEL_DIR, "training")
+    if not os.path.exists(training_path):
         return False
     try:
         import sys
-        notebooks_path = os.path.join(MODEL_DIR, "Notebooks")
-        if notebooks_path not in sys.path:
-            sys.path.insert(0, notebooks_path)
+        if training_path not in sys.path:
+            sys.path.insert(0, training_path)
         from unsloth import FastLanguageModel
         from safe_generate import safe_generate
         real_safe_generate = safe_generate
-        model_path = os.path.join(notebooks_path, "final_model")
+        model_path = os.path.join(training_path, "final_model")
         real_model, real_tokenizer = FastLanguageModel.from_pretrained(model_path, load_in_4bit=True)
         return True
     except Exception as e:
@@ -262,7 +262,7 @@ async def _startup_preload():
         asyncio.create_task(asyncio.to_thread(load_real_model))
     else:
         print(f"[FT model] NOT FOUND — will use mock YAML.\n"
-              f"           → To use the real model: run model_server.py on the GPU workspace, "
+              f"           To use the real model: run model_server.py on the GPU workspace, "
               f"then set MODEL_SERVER_URL (current: {MODEL_SERVER_URL}).")
 
 
@@ -279,22 +279,22 @@ def answer_sales_by_category():
         "subtitle": "10-minute rolling window · updated 23 seconds ago · excluding returns & gift cards",
         "badges": _badges_live(),
         "kpis": [
-            {"val": "₹3.87L", "label": "Total sales (10 min)", "delta": "↑ +12% vs last window", "delta_cls": "up"},
-            {"val": "287", "label": "Transactions", "delta": "↑ +8 vs last window", "delta_cls": "up"},
-            {"val": "₹1,347", "label": "Avg order value", "delta": "↑ ₹230 improvement", "delta_cls": "up"},
+            {"val": "₹3.87L", "label": "Total sales (10 min)", "delta": "+12% vs last window", "delta_cls": "up"},
+            {"val": "287", "label": "Transactions", "delta": "+8 vs last window", "delta_cls": "up"},
+            {"val": "₹1,347", "label": "Avg order value", "delta": "₹230 improvement", "delta_cls": "up"},
             {"val": "6", "label": "Active stores", "delta": "across 4 regions", "delta_cls": "flat"},
         ],
         "table": {
             "columns": ["#", "Category", "Region", "Sales (10 min)", "Txns", "Trend"],
             "rows": [
-                ['<span class="rank">1</span>', "Electronics", "SOUTH", "₹1,24,500", "42", '<span class="trend-up">↑ 18%</span>'],
-                ['<span class="rank">2</span>', "Apparel", "WEST", "₹89,200", "67", '<span class="trend-up">↑ 9%</span>'],
-                ['<span class="rank">3</span>', "Mobile Phones", "NORTH", "₹76,800", "31", '<span class="trend-up">↑ 5%</span>'],
-                ['<span class="rank">4</span>', "Groceries", "EAST", "₹54,300", "119", '<span class="trend-down">↓ 3%</span>'],
-                ['<span class="rank">5</span>', "Home &amp; Furniture", "CENTRAL", "₹41,900", "28", '<span class="trend-up">↑ 2%</span>'],
+                ['<span class="rank">1</span>', "Electronics", "SOUTH", "₹1,24,500", "42", '<span class="trend-up">18%</span>'],
+                ['<span class="rank">2</span>', "Apparel", "WEST", "₹89,200", "67", '<span class="trend-up">9%</span>'],
+                ['<span class="rank">3</span>', "Mobile Phones", "NORTH", "₹76,800", "31", '<span class="trend-up">5%</span>'],
+                ['<span class="rank">4</span>', "Groceries", "EAST", "₹54,300", "119", '<span class="trend-down">3%</span>'],
+                ['<span class="rank">5</span>', "Home &amp; Furniture", "CENTRAL", "₹41,900", "28", '<span class="trend-up">2%</span>'],
             ],
         },
-        "insight": {"icon": "💡", "tone": "brand",
+        "insight": {"icon": "", "tone": "brand",
                     "html": "<strong>AI insight:</strong> Electronics in SOUTH region is outperforming its 7-day "
                             "average by 18%. Store #042 Chennai is driving 34% of this. Consider checking inventory."},
     }
@@ -304,23 +304,23 @@ def answer_high_returns_live():
     return {
         "title": "High Returns Alert — by Store",
         "subtitle": "30-minute window · threshold: 20 returns per store · live now",
-        "badges": [{"cls": "badge-red", "html": "⚠ 1 store breaching"}] + _badges_live(),
+        "badges": [{"cls": "badge-red", "html": "1 store breaching"}] + _badges_live(),
         "kpis": [
-            {"val": "1", "label": "Stores over threshold", "delta": "↑ +1 vs last window", "delta_cls": "down"},
-            {"val": "63", "label": "Total returns (30 min)", "delta": "↑ +14", "delta_cls": "down"},
+            {"val": "1", "label": "Stores over threshold", "delta": "+1 vs last window", "delta_cls": "down"},
+            {"val": "63", "label": "Total returns (30 min)", "delta": "+14", "delta_cls": "down"},
             {"val": "21", "label": "Peak store returns", "delta": "Chennai #042", "delta_cls": "flat"},
-            {"val": "₹2.1L", "label": "Refund value", "delta": "↑ +9%", "delta_cls": "down"},
+            {"val": "₹2.1L", "label": "Refund value", "delta": "+9%", "delta_cls": "down"},
         ],
         "table": {
             "columns": ["#", "Store", "Region", "Returns (30 min)", "Threshold", "Status"],
             "rows": [
-                ['<span class="rank">1</span>', "Chennai #042", "SOUTH", '<span style="color:var(--red);font-weight:600">21</span>', "20", '<span class="badge badge-red">🚨 Breached</span>'],
+                ['<span class="rank">1</span>', "Chennai #042", "SOUTH", '<span style="color:var(--red);font-weight:600">21</span>', "20", '<span class="badge badge-red">Breached</span>'],
                 ['<span class="rank">2</span>', "Mumbai #007", "WEST", "18", "20", '<span class="badge badge-amber">Watch</span>'],
                 ['<span class="rank">3</span>', "Delhi #115", "NORTH", "12", "20", '<span style="color:var(--green);font-size:11px">Normal</span>'],
                 ['<span class="rank">4</span>', "Hyderabad #033", "SOUTH", "7", "20", '<span style="color:var(--green);font-size:11px">Normal</span>'],
             ],
         },
-        "insight": {"icon": "🔴", "tone": "red",
+        "insight": {"icon": "", "tone": "red",
                     "html": "<strong>Alert:</strong> Chennai #042 crossed the 20-return threshold (21 in 30 min). "
                             "A Slack alert was sent to #ops-alerts. Top reason: \"size/fit\"."},
     }
@@ -332,22 +332,22 @@ def answer_platinum():
         "subtitle": "This hour · orders over ₹10,000 only · 22 mins ago",
         "badges": _badges_live(),
         "kpis": [
-            {"val": "₹8.4L", "label": "Total spend this hour", "delta": "↑ +24% vs last hour", "delta_cls": "up"},
-            {"val": "63", "label": "Platinum orders", "delta": "↑ +11 orders", "delta_cls": "up"},
-            {"val": "₹13.3K", "label": "Avg order value", "delta": "↑ ₹1.1K higher", "delta_cls": "up"},
+            {"val": "₹8.4L", "label": "Total spend this hour", "delta": "+24% vs last hour", "delta_cls": "up"},
+            {"val": "63", "label": "Platinum orders", "delta": "+11 orders", "delta_cls": "up"},
+            {"val": "₹13.3K", "label": "Avg order value", "delta": "₹1.1K higher", "delta_cls": "up"},
             {"val": "87%", "label": "Paid via UPI / Card", "delta": "13% BNPL", "delta_cls": "flat"},
         ],
         "table": {
             "columns": ["#", "Region", "Platinum Spend", "Customers", "Avg Value", "Trend"],
             "rows": [
-                ['<span class="rank">1</span>', "SOUTH", "₹2,84,000", "21", "₹13,524", '<span class="trend-up">↑ 31%</span>'],
-                ['<span class="rank">2</span>', "WEST", "₹2,10,500", "17", "₹12,382", '<span class="trend-up">↑ 19%</span>'],
-                ['<span class="rank">3</span>', "NORTH", "₹1,93,200", "14", "₹13,800", '<span class="trend-up">↑ 22%</span>'],
-                ['<span class="rank">4</span>', "EAST", "₹98,400", "8", "₹12,300", '<span class="trend-down">↓ 4%</span>'],
-                ['<span class="rank">5</span>', "CENTRAL", "₹54,900", "3", "₹18,300", '<span class="trend-up">↑ 7%</span>'],
+                ['<span class="rank">1</span>', "SOUTH", "₹2,84,000", "21", "₹13,524", '<span class="trend-up">31%</span>'],
+                ['<span class="rank">2</span>', "WEST", "₹2,10,500", "17", "₹12,382", '<span class="trend-up">19%</span>'],
+                ['<span class="rank">3</span>', "NORTH", "₹1,93,200", "14", "₹13,800", '<span class="trend-up">22%</span>'],
+                ['<span class="rank">4</span>', "EAST", "₹98,400", "8", "₹12,300", '<span class="trend-down">4%</span>'],
+                ['<span class="rank">5</span>', "CENTRAL", "₹54,900", "3", "₹18,300", '<span class="trend-up">7%</span>'],
             ],
         },
-        "insight": {"icon": "💡", "tone": "brand",
+        "insight": {"icon": "", "tone": "brand",
                     "html": "<strong>AI insight:</strong> SOUTH region PLATINUM spend is up 31% — driven by high "
                             "Electronics + Mobile AOV. Consider targeted push notifications in EAST."},
     }
@@ -357,24 +357,24 @@ def answer_top_returns():
     return {
         "title": "Top Products by Return Rate · Last Hour",
         "subtitle": "Only products with 5+ returns shown · 1 hr ago",
-        "badges": [{"cls": "badge-red", "html": "⚠ 2 alerts"}] + _badges_live(),
+        "badges": [{"cls": "badge-red", "html": "2 alerts"}] + _badges_live(),
         "kpis": [
             {"val": "38%", "label": "Worst return rate", "delta": "Samsung M34", "delta_cls": "down"},
-            {"val": "46", "label": "Total returns (1 hr)", "delta": "↑ +12", "delta_cls": "down"},
+            {"val": "46", "label": "Total returns (1 hr)", "delta": "+12", "delta_cls": "down"},
             {"val": "2", "label": "SKUs flagged High", "delta": "needs action", "delta_cls": "down"},
-            {"val": "₹1.4L", "label": "Refund exposure", "delta": "↑ +18%", "delta_cls": "down"},
+            {"val": "₹1.4L", "label": "Refund exposure", "delta": "+18%", "delta_cls": "down"},
         ],
         "table": {
             "columns": ["#", "Product", "Category", "Returns", "Orders", "Return Rate", "Signal"],
             "rows": [
-                ['<span class="rank">1</span>', "Samsung Galaxy M34 (Blue)", "Mobile", "18", "47", '<span style="color:var(--red);font-weight:600">38%</span>', '<span class="badge badge-red">🚨 High</span>'],
-                ['<span class="rank">2</span>', "Nike Air Max 270 (Size 9)", "Footwear", "12", "38", '<span style="color:var(--red);font-weight:600">31%</span>', '<span class="badge badge-red">🚨 High</span>'],
+                ['<span class="rank">1</span>', "Samsung Galaxy M34 (Blue)", "Mobile", "18", "47", '<span style="color:var(--red);font-weight:600">38%</span>', '<span class="badge badge-red">High</span>'],
+                ['<span class="rank">2</span>', "Nike Air Max 270 (Size 9)", "Footwear", "12", "38", '<span style="color:var(--red);font-weight:600">31%</span>', '<span class="badge badge-red">High</span>'],
                 ['<span class="rank">3</span>', "Philips Air Fryer 2.5L", "Home", "6", "31", '<span style="color:var(--amber);font-weight:600">19%</span>', '<span class="badge badge-amber">Watch</span>'],
                 ['<span class="rank">4</span>', "Levi\'s 511 Slim Jeans (32)", "Apparel", "5", "44", '<span style="color:var(--amber)">11%</span>', '<span class="badge badge-amber">Watch</span>'],
                 ['<span class="rank">5</span>', "Dell Wireless Mouse M215", "Electronics", "5", "72", "7%", '<span style="color:var(--green);font-size:11px">Normal</span>'],
             ],
         },
-        "insight": {"icon": "🔴", "tone": "red",
+        "insight": {"icon": "", "tone": "red",
                     "html": "<strong>Quality alert:</strong> Samsung Galaxy M34 (Blue) has a 38% return rate this hour "
                             "— 3× its daily average. Top reason: \"defective screen\". Recommend pausing this SKU."},
     }
@@ -384,9 +384,9 @@ def answer_low_inventory():
     return {
         "title": "Low Inventory Alert — by Warehouse",
         "subtitle": "Live · threshold: 5 units on hand · alerts sent to #inventory-alerts",
-        "badges": [{"cls": "badge-red", "html": "⚠ 3 SKUs below threshold"}] + _badges_live(),
+        "badges": [{"cls": "badge-red", "html": "3 SKUs below threshold"}] + _badges_live(),
         "kpis": [
-            {"val": "3", "label": "SKUs below 5 units", "delta": "↑ +2 vs last check", "delta_cls": "down"},
+            {"val": "3", "label": "SKUs below 5 units", "delta": "+2 vs last check", "delta_cls": "down"},
             {"val": "2", "label": "Warehouses affected", "delta": "South · West", "delta_cls": "flat"},
             {"val": "1", "label": "Critically low (≤1)", "delta": "needs restock now", "delta_cls": "down"},
             {"val": "₹0.9L", "label": "Suggested reorder value", "delta": "auto-PO ready", "delta_cls": "flat"},
@@ -394,13 +394,13 @@ def answer_low_inventory():
         "table": {
             "columns": ["#", "Product", "Warehouse", "On hand", "Reorder point", "Status"],
             "rows": [
-                ['<span class="rank">1</span>', "Samsung Galaxy M34 (Blue)", "Chennai WH-042", '<span style="color:var(--red);font-weight:600">1</span>', "20", '<span class="badge badge-red">🚨 Critical</span>'],
-                ['<span class="rank">2</span>', "Philips Air Fryer 2.5L", "Mumbai WH-007", '<span style="color:var(--red);font-weight:600">3</span>', "15", '<span class="badge badge-red">🚨 Critical</span>'],
+                ['<span class="rank">1</span>', "Samsung Galaxy M34 (Blue)", "Chennai WH-042", '<span style="color:var(--red);font-weight:600">1</span>', "20", '<span class="badge badge-red">Critical</span>'],
+                ['<span class="rank">2</span>', "Philips Air Fryer 2.5L", "Mumbai WH-007", '<span style="color:var(--red);font-weight:600">3</span>', "15", '<span class="badge badge-red">Critical</span>'],
                 ['<span class="rank">3</span>', "Dell Wireless Mouse M215", "Chennai WH-042", '<span style="color:var(--amber);font-weight:600">4</span>', "25", '<span class="badge badge-amber">Low</span>'],
                 ['<span class="rank">4</span>', "Nike Air Max 270 (Size 9)", "Delhi WH-115", "8", "20", '<span style="color:var(--green);font-size:11px">Normal</span>'],
             ],
         },
-        "insight": {"icon": "🔴", "tone": "red",
+        "insight": {"icon": "", "tone": "red",
                     "html": "<strong>Restock alert:</strong> Samsung Galaxy M34 (Blue) at Chennai WH-042 is down to "
                             "1 unit (threshold 5). A Slack alert was sent to #inventory-alerts and an auto-reorder PO "
                             "is suggested."},
@@ -587,19 +587,19 @@ async def _call_ft_model(cid):
         yaml_output = None
 
     if yaml_output:
-        # Real model output → flows to the data engineer for review exactly like the mock did.
+        # Real model output flows to the data engineer for review exactly like the mock did.
         c["yaml_full"] = yaml_output
         c["yaml_html"] = _format_yaml_html(yaml_output)
         c["pipeline_name_real"] = _extract_pipeline_name(yaml_output)
         c["self_correction_attempts"] = 0
         c["model_name"] = "Qwen2.5-14B (MegaStore-LoRA)"
-        print(f"[FT model] ✓ used REAL model output for {cid}")
+        print(f"[FT model] used REAL model output for {cid}")
         print(f"-----> the op is: {yaml_output}")
     else:
-        # No real model reachable → short canned fallback (NOT a 2-minute wait).
+        # No real model reachable short canned fallback (NOT a 2-minute wait).
         await asyncio.sleep(2.0)
         c["self_correction_attempts"] = 1
-        print(f"[FT model] ✗ no model reachable — used mock YAML for {cid}")
+        print(f"[FT model] no model reachable — used mock YAML for {cid}")
 
     c["status"] = "pending_review"
     _save()
@@ -626,15 +626,15 @@ def get_status(cid: str, authorization: Optional[str] = Header(None)):
 @app.get("/pipelines/suggestions")
 def get_suggestions(persona: str = "business"):
     return {"suggestions": [
-        {"label": "Sales by category", "icon": "📊",
+        {"label": "Sales by category", "icon": "",
          "question": "Sales by category, exclude returns, 10-min window by store and region"},
-        {"label": "High return stores", "icon": "↩️",
+        {"label": "High return stores", "icon": "",
          "question": "Which stores have more than 20 returns in the last 30 minutes?"},
-        {"label": "Platinum customer spend", "icon": "💎",
+        {"label": "Platinum customer spend", "icon": "",
          "question": "PLATINUM customer spend by region this hour"},
-        {"label": "Quality alerts", "icon": "🔍",
+        {"label": "Quality alerts", "icon": "",
          "question": "Top products with quality issues today"},
-        {"label": "Channel GMV", "icon": "🛒",
+        {"label": "Channel GMV", "icon": "",
          "question": "Hourly GMV by channel — ONLINE vs IN_STORE"},
     ]}
 
@@ -771,7 +771,7 @@ async def approve(cid: str, body: dict, authorization: Optional[str] = Header(No
             c["status"] = "live"
             c["live_since"] = "just now"
             _save()
-        final = {"step": 6, "label": "✓ Pipeline live — data is flowing!", "status": "complete",
+        final = {"step": 6, "label": "Pipeline live — data is flowing!", "status": "complete",
                  "flink_job_id": "flink-job-4822", "pipeline_name": _pipeline_name(c) if c else "pipeline"}
         yield f"data: {json.dumps(final)}\n\n"
 

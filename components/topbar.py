@@ -36,7 +36,7 @@ def render_topbar():
                 f'<div class="topbar-live"><span class="pulse-dot"></span> Flink live · '
                 f'{active} pipelines active</div>', unsafe_allow_html=True)
         with c3:
-            if st.button("📊 Business", key="ps_biz",
+            if st.button("Business", key="ps_biz",
                          type="primary" if is_biz else "secondary", use_container_width=True):
                 do_login("business")
                 # URL is the source of truth — overwrite it so _sync_query_params agrees.
@@ -47,7 +47,7 @@ def render_topbar():
                     st.query_params["open"] = active_id
                 st.rerun()
         with c4:
-            if st.button("⚙️ Data Engineer", key="ps_eng",
+            if st.button("Data Engineer", key="ps_eng",
                          type="primary" if not is_biz else "secondary", use_container_width=True):
                 do_login("engineer")
                 st.session_state.engineer_tab = "review"
