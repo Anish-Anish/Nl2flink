@@ -47,6 +47,10 @@ class PipelineValidator:
         self._builder = FlinkSqlBuilder(settings)
         self._schema_reader = schema_reader
 
+    def describe_tables(self, table_names: List[str]) -> Dict[str, PostgresTable]:
+        """Columns of the given tables — used by the agent when it builds a retry prompt."""
+        return self._schema_reader.describe_tables(table_names)
+
     def validate_yaml(self, yaml_text: str) -> ValidationResult:
         try:
             spec = parse_pipeline_yaml(yaml_text)
