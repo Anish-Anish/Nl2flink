@@ -7,6 +7,7 @@ Every route lives under /api/v1 and returns plain JSON, so the Streamlit app in 
 and any future React app talk to exactly the same backend.
 """
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,7 +23,18 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
-app = FastAPI(title="MegaStore Pulse API", version="1.0.0")
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Create the studio table if it is missing, and log what the backend talks to."""
+    initialise_database()
+    logger.info("MegaStore Pulse API ready — model server: %s, flink: %s",
+                settings.model_server_url, settings.flink_sql_gateway_url)
+    yield
+
+
+app = FastAPI(title="MegaStore Pulse API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -36,14 +48,6 @@ app.include_router(auth_routes.router)
 app.include_router(business_routes.router)
 app.include_router(engineer_routes.router)
 app.include_router(monitor_routes.router)
-
-
-@app.on_event("startup")
-def on_startup() -> None:
-    """Create the studio table if it is missing, and log what the backend can reach."""
-    initialise_database()
-    logger.info("MegaStore Pulse API ready — model server: %s, flink: %s",
-                settings.model_server_url, settings.flink_sql_gateway_url)
 
 
 @app.exception_handler(StackError)

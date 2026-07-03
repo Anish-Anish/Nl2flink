@@ -51,7 +51,7 @@ async def ask_question(body: AskRequest) -> AskResponse:
             requested_by=body.requested_by, requested_by_role=body.requested_by_role,
             status=PipelineStatus.GENERATING.value))
 
-    asyncio.create_task(build_pipeline_for_request(request_id))
+    start_background_work(build_pipeline_for_request(request_id))
     return AskResponse(request_id=request_id, status=PipelineStatus.GENERATING.value)
 
 
@@ -95,6 +95,11 @@ def delete_request(request_id: str) -> dict:
 
 
 # ── background work ──────────────────────────────────────────────────────────
+def start_background_work(coroutine) -> None:
+    """Run the authoring agent without making the caller wait for the model."""
+    asyncio.create_task(coroutine)
+
+
 async def build_pipeline_for_request(request_id: str) -> None:
     """
     Run the authoring agent and store what it produced.
