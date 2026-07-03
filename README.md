@@ -41,59 +41,61 @@ The business user self-serves. The engineer reviews instead of writes. Real-time
 ## Repository Directory Structure
 
 ```
-MegaStore-Finetunning/
-├── README.md               # Comprehensive documentation (this file)
-├── requirements.txt        # Python packages for backend, frontend, and model server
-├── .gitignore              # Ignored local virtual environments & large model binaries
-├── streamlit_app.py        # Streamlit frontend entrypoint (topbar + persona routing)
-├── backend_mock.py         # Mock FastAPI backend serving SSE stream and mock pipeline status
-├── generate_snapshot.py    # Generates static HTML previews of the personas
-├── .env.example            # Environment variables configuration template
+Nl2flink/
+├── README.md
+├── requirements.txt
+├── .env.example              # every setting the backend reads
 │
-├── api/                    # Frontend HTTP/SSE client layer
-│   ├── __init__.py
-│   └── client.py
+├── backend/                  # FastAPI backend — all real, no mocks
+│   ├── config.py             # every server endpoint in one Settings class
+│   ├── pipeline_spec.py      # pydantic model of the YAML the fine-tuned model emits
+│   ├── database.py           # pipeline_requests table + the status flow
+│   ├── api_models.py         # API request/response models (plain JSON, no HTML)
+│   ├── dependencies.py       # the shared services the routers use
+│   ├── main.py               # the FastAPI app
+│   ├── routers/
+│   │   ├── auth_routes.py
+│   │   ├── business_routes.py    # ask, status, answer, history
+│   │   ├── engineer_routes.py    # review, edit, approve (SSE), reject, deployed
+│   │   └── monitor_routes.py     # Flink metrics, CDC events, platform + MCP health
+│   ├── services/
+│   │   ├── stack_clients.py      # postgres · debezium · kafka · flink · snowflake · slack · github
+│   │   ├── model_generator.py    # the fine-tuned model server
+│   │   ├── pipeline_validator.py # schema + semantics + compilation checks
+│   │   ├── flink_sql_builder.py  # pipeline DSL -> Flink SQL
+│   │   └── answer_reader.py      # Snowflake results -> the answer card
+│   └── agents/
+│       ├── mcp_client.py         # LangGraph MCP adapter
+│       ├── pipeline_agent.py     # ground -> generate -> validate -> correct
+│       └── deployment_agent.py   # commit -> CDC -> Flink -> verify -> notify
 │
-├── components/             # Reusable UI component HTML wrappers
-│   ├── __init__.py
-│   ├── answer_card.py      # Priya's KPI and interactive charts
-│   ├── journey_trail.py    # Real-time state trail
-│   ├── monitor_panel.py    # Flink metrics monitor & terminal log stream
-│   ├── review_card.py      # Arjun's diff view, checks, and approve buttons
-│   ├── sidebar.py          # Left history navigation bar
-│   └── topbar.py           # Top navigation bar
+├── mcp_servers/              # what the agents are allowed to do
+│   ├── postgres_schema_server.py
+│   ├── debezium_kafka_server.py
+│   ├── flink_server.py
+│   ├── snowflake_server.py
+│   ├── slack_server.py
+│   └── github_server.py
 │
-├── views/                  # UI Persona Views
-│   ├── __init__.py
-│   ├── business_view.py    # Business persona UI (Priya)
-│   └── engineer_view.py    # Engineer persona UI (Arjun)
+├── ui/                       # Streamlit front end — talks only to /api/v1
+│   ├── streamlit_app.py
+│   ├── api_client.py         # the only file that makes HTTP calls
+│   ├── views/                # business_view.py · engineer_view.py
+│   ├── components/           # answer_card · journey_trail · review_card · monitor_panel · sidebar · topbar
+│   ├── utils/state.py
+│   └── assets/style.css
 │
-├── utils/                  # UI helper utilities
-├── assets/                 # Custom CSS overrides for native Streamlit styling
-│   └── style.css
-│
-├── dataset/                # Curated dataset for model fine-tuning
-│   ├── dataset-1035.json
-│   └── dataset-1800.json
-│
-├── schema/                 # Ground truth relational database schemas
-│   └── megastore_complete_schema.sql
-│
-├── training/               # Fine-tuning notebooks and scripts
-│   ├── fine_tuning.ipynb   # QLoRA (4-bit) fine-tuning pipeline
-│   ├── safe_generate.py    # Custom token-level inference script
-│   └── demo.py             # CLI generation playground
-│
-├── model_server/           # Model deployment files
-│   ├── model.py            # Local inference verification script
-│   └── model_server.py     # FastAPI model host wrapper
-│
-└── docs/                   # Supporting design documents
-    └── images/             # Documentation visuals
-        └── architecture_layout.jpeg
+├── dataset/                  # 2,917 question -> pipeline pairs used for fine-tuning
+├── schema/                   # MegaStore Postgres schema (30 tables)
+├── training/                 # QLoRA fine-tuning — not touched by the application
+├── model_server/             # serves the fine-tuned model over HTTP — not touched
+└── docs/
+    ├── ARCHITECTURE.md       # which part of the code does what, and the full flow
+    └── images/
 ```
 
----
+> **`docs/ARCHITECTURE.md` is the file to read first** — it maps every module to its job
+> and walks one question end to end.
 
 ## How It Works (7 Layers)
 
@@ -172,46 +174,55 @@ A review dashboard shows the SME the original question, the generated YAML (diff
 
 ## MCP Tools
 
-The agents take real actions through five Model Context Protocol servers — no manual steps:
+The agents take every real action through Model Context Protocol servers — no manual steps:
 
-| Tool | Purpose |
+| Server | Tools |
 |---|---|
-| **DB Schema MCP** | Fetches live table/column context for grounded generation |
-| **GitHub MCP** | Commits approved pipeline YAML |
-| **Flink REST MCP** | Submits and manages streaming jobs |
-| **Slack MCP** | Notifies users on key events |
-| **Snowflake MCP** | Verifies sink tables |
+| **postgres_schema** | `list_postgres_tables`, `describe_postgres_tables` |
+| **debezium_kafka** | `register_debezium_connector`, `get_debezium_connector_state`, `ensure_kafka_topics`, `read_recent_change_events` |
+| **flink** | `submit_flink_pipeline`, `get_flink_job_state`, `get_flink_job_throughput`, `cancel_flink_job` |
+| **snowflake** | `check_snowflake_table_exists`, `read_snowflake_rows` |
+| **slack** | `send_slack_message`, `send_slack_webhook` |
+| **github** | `commit_pipeline_yaml` |
 
----
+They are loaded with LangGraph's MCP adapter (`langchain-mcp-adapters`) and started as
+subprocesses by the agents — there is nothing to run by hand.
 
 ## Getting Started
 
-### 1. Requirements Installation
 ```bash
-cd MegaStore-Finetunning
 pip install -r requirements.txt
+cp .env.example .env          # point it at your Postgres, Kafka, Flink, Snowflake…
 ```
 
-### 2. Run the FastAPI Backend Mock
-The backend mock manages pipeline configurations and runs local inference:
-```bash
-uvicorn backend_mock:app --port 8000 --reload
-```
+**1. The fine-tuned model** (on the GPU box):
 
-### 3. Run the Streamlit Frontend UI
-In a separate terminal, launch the client app:
 ```bash
-streamlit run streamlit_app.py
-```
-
-### 4. Deploying the GPU Model Server (Optional)
-If running in an environment with GPU acceleration, you can host the fine-tuned adapter:
-```bash
-# Set model directory or defaults to training/
 python model_server/model_server.py
 ```
 
----
+**2. The backend:**
+
+```bash
+uvicorn backend.main:app --port 8000 --reload
+```
+
+**3. The UI:**
+
+```bash
+streamlit run ui/streamlit_app.py
+```
+
+Check what the backend can reach at any time:
+
+```bash
+curl localhost:8000/api/v1/platform/status   # postgres, kafka, flink, snowflake, …
+curl localhost:8000/api/v1/platform/mcp      # the MCP servers
+```
+
+The API is documented at <http://localhost:8000/docs>. Every route lives under `/api/v1`
+and returns plain JSON, so the Streamlit app can be replaced by a React app without any
+backend change.
 
 ## License
 
